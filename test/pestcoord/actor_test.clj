@@ -1,0 +1,74 @@
+(ns pestcoord.actor-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [pestcoord.actor :as actor]
+            [pestcoord.store :as store]))
+
+(defn- fresh-store []
+  (let [st (store/mem-store)]
+    (store/register-applicator! st {:applicator-id "applicator-1" :name "Aki Sato"})
+    (store/register-site! st {:site-id "S-1" :name "Riverside Warehouse" :max-supply-cost 2000})
+    st))
+
+(deftest commits-a-registered-work-log
+  (let [st (fresh-store)
+        graph (actor/build-graph {:store st})
+        request {:applicator-id "applicator-1" :op :log-work-record :stake :low
+                  :site-id "S-1" :task "batch progress log"}
+        result (actor/run-request! graph request {} "thread-1")]
+    (is (= :done (:status result)))
+    (is (some? (get-in result [:state :record])))
+    (is (= 1 (count (store/records-of st "applicator-1"))))))
+
+(deftest holds-an-unregistered-site-proposal
+  (let [st (fresh-store)
+        graph (actor/build-graph {:store st})
+        request {:applicator-id "applicator-1" :op :log-work-record :stake :low
+                  :site-id "S-ghost" :task "batch progress log"}
+        result (actor/run-request! graph request {} "thread-2")]
+    (is (= :hold (:disposition (:state result))))
+    (is (empty? (store/records-of st "applicator-1")))))
+
+(deftest interrupts-then-approves-safety-concern-on-human-approval
+  (let [st (fresh-store)
+        graph (actor/build-graph {:store st})
+        request {:applicator-id "applicator-1" :op :flag-safety-concern :stake :low
+                  :site-id "S-1" :hazard-type :chemical-exposure}
+        interrupted (actor/run-request! graph request {} "thread-3")]
+    (is (= :interrupted (:status interrupted)))
+    (is (empty? (store/records-of st "applicator-1")))
+    (let [resumed (actor/approve! graph "thread-3")]
+      (is (= :done (:status resumed)))
+      (is (= 1 (count (store/records-of st "applicator-1")))))))
+
+(deftest holds-a-scope-excluded-op-even-at-high-confidence
+  (testing "an actor run can never commit a proposal that would finalize a fumigation/pesticide-application-execution decision, regardless of disposition path"
+    (let [st (fresh-store)
+          graph (actor/build-graph {:store st})
+          request {:applicator-id "applicator-1" :op :finalize-fumigation-decision :stake :low
+                    :site-id "S-1" :task "fumigation decision"}
+          result (actor/run-request! graph request {} "thread-4")]
+      (is (= :done (:status result)))
+      (is (= :hold (:disposition (:state result))))
+      (is (empty? (store/records-of st "applicator-1"))))))
+
+(deftest holds-a-chemical-safety-clearance-op-even-at-high-confidence
+  (testing "an actor run can never commit a proposal that would finalize a chemical-safety-clearance/re-entry decision, regardless of disposition path"
+    (let [st (fresh-store)
+          graph (actor/build-graph {:store st})
+          request {:applicator-id "applicator-1" :op :declare-site-safe-for-reentry :stake :low
+                    :site-id "S-1" :task "chemical-safety clearance"}
+          result (actor/run-request! graph request {} "thread-5")]
+      (is (= :done (:status result)))
+      (is (= :hold (:disposition (:state result))))
+      (is (empty? (store/records-of st "applicator-1"))))))
+
+(deftest holds-an-override-site-safety-officer-op-even-at-high-confidence
+  (testing "an actor run can never commit a proposal that would override a site safety officer's judgment, regardless of disposition path"
+    (let [st (fresh-store)
+          graph (actor/build-graph {:store st})
+          request {:applicator-id "applicator-1" :op :override-site-safety-officer-judgment :stake :low
+                    :site-id "S-1" :task "safety officer override"}
+          result (actor/run-request! graph request {} "thread-6")]
+      (is (= :done (:status result)))
+      (is (= :hold (:disposition (:state result))))
+      (is (empty? (store/records-of st "applicator-1"))))))
