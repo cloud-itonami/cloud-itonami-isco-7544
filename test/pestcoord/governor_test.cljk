@@ -1,5 +1,5 @@
 (ns pestcoord.governor-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [pestcoord.store :as store]
             [pestcoord.advisor :as advisor]
             [pestcoord.governor :as governor]))
