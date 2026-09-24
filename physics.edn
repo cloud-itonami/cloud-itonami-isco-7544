@@ -1,0 +1,35 @@
+;; What this vertical's robot physically does, declared for
+;; kotoba.robotics.process (kotoba-lang/robotics). `kbb -M:physics` runs it.
+;;
+;; README "Robotics premise": a pest-control/fumigation scheduling/logistics
+;; coordination robot schedules the crew, logs jobs/sites and coordinates
+;; equipment supply; it never applies pesticides or fumigants. Its physical
+;; work is job-site logistics: moving cylinders on a hand-truck, and the heat
+;; treatment of pallet timber that the job schedule has to wait for.
+;;
+;; Every number without a cited source is marked `estimate` in its :basis.
+;; Replacing an estimate with a sourced value is this bot's growth work.
+{:physics/schema "itonami.physical-ai.spec.v1"
+ :repo "cloud-itonami/cloud-itonami-isco-7544"
+ :cases
+ [{:id :cylinder-hand-truck
+   :kind :transport
+   :procedure "powered hand-truck moves an upright equipment cylinder from the van to the treatment enclosure"
+   :params {:mass-kg 30.0 :distance-m 20.0 :v-max-mps 0.7 :a-max-mps2 0.4
+            :brake-decel-mps2 1.5 :drive-force-n 150.0 :crr 0.03
+            :cog-height-m 0.40 :support-half-length-m 0.25
+            :payload-kg 60.0 :max-time-s 600.0}
+   :sweep {:param :payload-cog-height-m :values [0.4 0.6 0.8 1.0 1.2]}
+   :quantity :min-tipover-margin
+   :limit {:min 0.3 :basis "estimate: 30 % tip-over reserve for an upright cylinder when the hand-truck brakes at 1.5 m/s²"}
+   :boundary {:lo 0.2 :hi 2.0}}
+  {:id :pallet-timber-heat-treatment
+   :kind :thermal
+   :procedure "pallet stringer is heated in a 70 °C heat-treatment chamber; the job waits until its core (adiabatic mid-plane) reaches 56 °C"
+   :params {:conductivity-w-mk 0.14 :density-kg-m3 500.0 :specific-heat-j-kgk 2000.0
+            :t0-c 15.0 :t-hot-c 70.0 :h-front-w-m2k 20.0 :h-back-w-m2k 0.0
+            :threshold-c 56.0 :duration-s 21600.0 :nodes 21}
+   :sweep {:param :thickness-m :values [0.01 0.02 0.03 0.04 0.05]}
+   :quantity :time-to-threshold-s
+   :limit {:max 7200.0 :basis "estimate: a 2-hour chamber slot before the 30-minute hold; the 56 °C core threshold itself is the ISPM 15 heat-treatment (HT) schedule"}
+   :boundary {:lo 0.005 :hi 0.06}}]}
