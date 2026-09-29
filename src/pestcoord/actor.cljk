@@ -2,7 +2,7 @@
   "PestCoordActor — the ISCO-08 7544 fumigators and other pest and
   weed controllers pest-control/fumigation-operation scheduling/
   logistics coordination actor as a `langgraph.graph/state-graph`
-  (ADR-2607121000 / CLAUDE.md Actors section). One graph run = one
+  (ADR-2607121000 / AGENTS.md Actors section). One graph run = one
   pest-control/fumigation-coordination operation request (intake ->
   advise -> govern -> decide -> commit/hold, with a human-approval
   interrupt for escalated proposals). No infinite internal loop;
