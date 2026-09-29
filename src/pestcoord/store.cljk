@@ -2,7 +2,7 @@
   "SSoT for the ISCO-08 7544 fumigators and other pest and weed
   controllers pest-control/fumigation-operation scheduling/logistics
   coordination actor (itonami actor pattern, ADR-2607121000 /
-  CLAUDE.md Actors section; README's 'Robotics premise' — a
+  AGENTS.md Actors section; README's 'Robotics premise' — a
   pest-control/fumigation-operation scheduling/logistics coordination
   robot performs applicator/site scheduling, job/site/progress-record
   logging and administrative/equipment supply-order coordination for a
